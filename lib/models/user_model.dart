@@ -4,6 +4,7 @@ class UserModel {
   final String email;
   final String phone;
   final String role;
+  final String profileUrl;
 
   UserModel({
     required this.uid,
@@ -11,6 +12,7 @@ class UserModel {
     required this.email,
     required this.phone,
     required this.role,
+    this.profileUrl = '',
   });
 
   Map<String, dynamic> toMap() {
@@ -20,6 +22,7 @@ class UserModel {
       'email': email,
       'phone': phone,
       'role': role,
+      'profileUrl': profileUrl,
     };
   }
 }

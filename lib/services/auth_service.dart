@@ -35,6 +35,9 @@ class AuthService {
       );
 
       if (result.user != null) {
+        // Default avatar
+        String defaultAvatar =
+            'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix';
         await _firestore
             .collection('users')
             .doc(result.user!.uid)
@@ -45,6 +48,7 @@ class AuthService {
                 email: email,
                 phone: phone,
                 role: role,
+                profileUrl: defaultAvatar,
               ).toMap(),
             );
       }

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+
 import 'login_page.dart';
 import 'home_page.dart';
 
@@ -17,6 +19,7 @@ class _ProfilePageState extends State<ProfilePage> {
   String email = '';
   String role = '';
   String phone = '';
+  String profileUrl = '';
   bool isLoading = true;
 
   @override
@@ -35,14 +38,77 @@ class _ProfilePageState extends State<ProfilePage> {
           .get();
       if (doc.exists) {
         final data = doc.data()!;
-        name = data['name'] ?? '';
-        role = data['role'] ?? '';
-        phone = data['phone'] ?? '';
+        setState(() {
+          name = data['name'] ?? '';
+          role = data['role'] ?? '';
+          phone = data['phone'] ?? '';
+          profileUrl = data['profileUrl'] ?? '';
+          isLoading = false;
+        });
       }
     }
-    setState(() {
-      isLoading = false;
-    });
+  }
+
+  Future<void> _updateProfileImage() async {
+    // Daftar URL avatar default
+    final List<String> avatarUrls = [
+      'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix',
+      'https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka',
+      'https://api.dicebear.com/7.x/avataaars/svg?seed=Bob',
+      'https://api.dicebear.com/7.x/avataaars/svg?seed=Charlie',
+      'https://api.dicebear.com/7.x/avataaars/svg?seed=David',
+    ];
+
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          'Pilih Avatar',
+          style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: GridView.builder(
+            shrinkWrap: true,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              crossAxisSpacing: 8,
+              mainAxisSpacing: 8,
+            ),
+            itemCount: avatarUrls.length,
+            itemBuilder: (context, index) {
+              return InkWell(
+                onTap: () async {
+                  final user = FirebaseAuth.instance.currentUser;
+                  if (user != null) {
+                    await FirebaseFirestore.instance
+                        .collection('users')
+                        .doc(user.uid)
+                        .update({'profileUrl': avatarUrls[index]});
+                    setState(() => profileUrl = avatarUrls[index]);
+                  }
+                  Navigator.pop(context);
+                },
+                child: ClipOval(
+                  child: SvgPicture.network(
+                    avatarUrls[index],
+                    width: 80,
+                    height: 80,
+                    fit: BoxFit.cover,
+                    placeholderBuilder: (context) => Container(
+                      width: 80,
+                      height: 80,
+                      color: Colors.white,
+                      child: const Center(child: CircularProgressIndicator()),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _logout() async {
@@ -149,24 +215,73 @@ class _ProfilePageState extends State<ProfilePage> {
                   Center(
                     child: Column(
                       children: [
-                        Container(
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.green.withOpacity(0.18),
-                                blurRadius: 18,
-                                offset: const Offset(0, 6),
+                        GestureDetector(
+                          onTap: _updateProfileImage,
+                          child: Stack(
+                            children: [
+                              Container(
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.green.withOpacity(0.18),
+                                      blurRadius: 18,
+                                      offset: const Offset(0, 6),
+                                    ),
+                                  ],
+                                ),
+                                child: CircleAvatar(
+                                  radius: 54,
+                                  backgroundColor: Colors.white,
+                                  child:
+                                      profileUrl.isNotEmpty &&
+                                          profileUrl.endsWith('.svg')
+                                      ? ClipOval(
+                                          child: SvgPicture.network(
+                                            profileUrl,
+                                            width: 96,
+                                            height: 96,
+                                            fit: BoxFit.cover,
+                                            placeholderBuilder: (context) =>
+                                                Container(
+                                                  width: 96,
+                                                  height: 96,
+                                                  color: Colors.white,
+                                                  child: const Center(
+                                                    child:
+                                                        CircularProgressIndicator(),
+                                                  ),
+                                                ),
+                                          ),
+                                        )
+                                      : CircleAvatar(
+                                          radius: 48,
+                                          backgroundImage: profileUrl.isNotEmpty
+                                              ? NetworkImage(profileUrl)
+                                              : const AssetImage(
+                                                      'assets/Profile.jpg',
+                                                    )
+                                                    as ImageProvider,
+                                        ),
+                                ),
+                              ),
+                              Positioned(
+                                bottom: 0,
+                                right: 0,
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: const BoxDecoration(
+                                    color: Colors.white,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.camera_alt,
+                                    color: Colors.green[700],
+                                    size: 20,
+                                  ),
+                                ),
                               ),
                             ],
-                          ),
-                          child: CircleAvatar(
-                            radius: 54,
-                            backgroundColor: Colors.white,
-                            child: CircleAvatar(
-                              radius: 48,
-                              backgroundImage: AssetImage('assets/Profile.jpg'),
-                            ),
                           ),
                         ),
                         const SizedBox(height: 14),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class OrdersPage extends StatefulWidget {
   const OrdersPage({super.key});
@@ -11,10 +12,24 @@ class OrdersPage extends StatefulWidget {
 }
 
 class _OrdersPageState extends State<OrdersPage> {
-  Stream<QuerySnapshot> ordersStream = FirebaseFirestore.instance
-      .collection('riwayat_pesanan')
-      .orderBy('waktu', descending: true)
-      .snapshots();
+  final String? userId = FirebaseAuth.instance.currentUser?.uid;
+
+  Stream<QuerySnapshot> getOrdersStream() {
+    return FirebaseFirestore.instance
+        .collection('riwayat_pesanan')
+        .where('userId', isEqualTo: userId)
+        .snapshots();
+  }
+
+  // Tambahkan fungsi untuk sort data secara lokal
+  List<DocumentSnapshot> sortOrdersByTime(List<DocumentSnapshot> docs) {
+    docs.sort((a, b) {
+      final aTime = (a['waktu'] as Timestamp).toDate();
+      final bTime = (b['waktu'] as Timestamp).toDate();
+      return bTime.compareTo(aTime); // descending order
+    });
+    return docs;
+  }
 
   String getEstimatedTime(DocumentSnapshot order) {
     // Simple estimation based on order time + 30 minutes
@@ -75,6 +90,12 @@ class _OrdersPageState extends State<OrdersPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (userId == null) {
+      return const Scaffold(
+        body: Center(child: Text('Silakan login terlebih dahulu')),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
@@ -87,7 +108,7 @@ class _OrdersPageState extends State<OrdersPage> {
         elevation: 0,
       ),
       body: StreamBuilder<QuerySnapshot>(
-        stream: ordersStream,
+        stream: getOrdersStream(),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             return Center(child: Text('Error: ${snapshot.error}'));
@@ -116,12 +137,38 @@ class _OrdersPageState extends State<OrdersPage> {
               ),
             );
           }
+          final docs = snapshot.data!.docs.where((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            return data['userId'] == userId;
+          }).toList();
+
+          if (docs.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.receipt_long, size: 80, color: Colors.grey[300]),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Belum ada pesanan',
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: Colors.grey[600],
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          final sortedDocs = sortOrdersByTime(docs);
 
           return ListView.builder(
             padding: const EdgeInsets.all(16),
-            itemCount: snapshot.data!.docs.length,
+            itemCount: sortedDocs.length,
             itemBuilder: (context, index) {
-              final order = snapshot.data!.docs[index];
+              final order = sortedDocs[index];
               final data = order.data() as Map<String, dynamic>;
               final cart = List<Map<String, dynamic>>.from(data['cart']);
 

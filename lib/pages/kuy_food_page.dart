@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'checkout_page.dart'; // Import CheckoutPage here
 
 class KuyFoodPage extends StatefulWidget {
@@ -12,12 +13,14 @@ class KuyFoodPage extends StatefulWidget {
 class _KuyFoodPageState extends State<KuyFoodPage> {
   List<Map<String, dynamic>> foods = [];
   List<Map<String, dynamic>> cart = [];
+  String? userId;
 
   @override
   void initState() {
     super.initState();
+    userId = FirebaseAuth.instance.currentUser?.uid;
     fetchFoods();
-    loadCartFromFirestore(); // Add this line
+    loadCartFromFirestore();
   }
 
   Future<void> fetchFoods() async {
@@ -43,10 +46,13 @@ class _KuyFoodPageState extends State<KuyFoodPage> {
     }
   }
 
+  // Ambil cart berdasarkan userId
   Future<void> loadCartFromFirestore() async {
+    if (userId == null) return;
     try {
       final snapshot = await FirebaseFirestore.instance
           .collection('cart')
+          .where('userId', isEqualTo: userId)
           .orderBy('created_at', descending: true)
           .limit(1)
           .get();
@@ -62,8 +68,11 @@ class _KuyFoodPageState extends State<KuyFoodPage> {
     }
   }
 
+  // Simpan cart berdasarkan userId
   Future<void> saveCartToFirestore() async {
+    if (userId == null) return;
     await FirebaseFirestore.instance.collection('cart').add({
+      'userId': userId,
       'items': cart,
       'created_at': FieldValue.serverTimestamp(),
     });

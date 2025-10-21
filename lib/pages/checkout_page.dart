@@ -4,6 +4,9 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 import '../widgets/confetti.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
+
 
 class CheckoutPage extends StatefulWidget {
   final List<Map<String, dynamic>> cart;
@@ -34,6 +37,7 @@ class _CheckoutPageState extends State<CheckoutPage>
   late Animation<double> _fadeAnimation;
   final _formKey = GlobalKey<FormState>();
   int shippingCost = 0;
+  final user = FirebaseAuth.instance.currentUser;
 
   void calculateShippingCost() {
     int base = 4000;
@@ -120,6 +124,7 @@ class _CheckoutPageState extends State<CheckoutPage>
       'metode_pembayaran': paymentMethod,
       'waktu': FieldValue.serverTimestamp(),
       'status': 'Menunggu Konfirmasi',
+      'userId': user?.uid, // 👈 tambahkan UID di sini
     };
 
     await FirebaseFirestore.instance
