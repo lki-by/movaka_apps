@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "797389601181",
+    "project_id": "movaka",
+    "storage_bucket": "movaka.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:797389601181:android:afcfee8c19958f3a7d5774",
+        "android_client_info": {
+          "package_name": "com.example.movaka_apps"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBoH2x6CEGM71JXcoC0qUXnhWzIDnnflos"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
